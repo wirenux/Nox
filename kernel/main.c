@@ -54,8 +54,8 @@ void kmain(void) {
         // Animation configuration
         int64_t side = 60;  // Starting size
 
-        int64_t x = 20;
-        int64_t y = 150;    // Shifted down slightly to start below the text logo
+        int64_t x = 500;
+        int64_t y = 500;    // Shifted down slightly to start below the text logo
         int64_t dx = 4;     // X velocity
         int64_t dy = 4;     // Y velocity
 

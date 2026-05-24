@@ -32,7 +32,7 @@ void kprintf(struct limine_framebuffer *fb, uint64_t x, uint64_t y, const char *
                 while (*s) {
                     if (*s == '\n') {
                         y += 16; // Move down by font height
-                        x = 10;
+                        x = 0;
                     } else {
                         fb_draw_char8x16(fb, x, y, *s, 0xFFFFFF, 0x000000);
                         x += 8; // Move right by font width
@@ -42,7 +42,7 @@ void kprintf(struct limine_framebuffer *fb, uint64_t x, uint64_t y, const char *
             }
         } else if (*p == '\n') {
             y += 16; // Move down by font height
-            x = 10;
+            x = 0;
         } else {
             fb_draw_char8x16(fb, x, y, *p, 0xFFFFFF, 0x000000);
             x += 8; // Move right by font width
