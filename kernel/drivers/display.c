@@ -1,4 +1,5 @@
 #include "../lib/display.h"
+#include "../lib/font.h"
 
 const uint8_t font8x8_table[95][8] = {
     {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, /* 32   */
@@ -170,6 +171,25 @@ void fb_draw_char(struct limine_framebuffer *fb2, uint64_t px, uint64_t py, char
                 fb_putpixel(fb2, px + bit, py + row, col);
             else
                 fb_putpixel(fb2, px + bit, py + row, bg);
+        }
+    }
+}
+
+void fb_draw_char8x16(struct limine_framebuffer *fb, uint64_t px, uint64_t py, char c, uint32_t col, uint32_t bg) {
+    if (c < 32 || c > 126) c = ' ';
+
+    // Index into the 16-row uint8_t table
+    const uint8_t *glyph = font8x16_table[c - 32];
+
+    for (int row = 0; row < 16; row++) {
+        uint8_t bits = glyph[row];
+        for (int bit = 0; bit < 8; bit++) {
+            // Check bits from MSB (left) to LSB (right)
+            if (bits & (1 << (7 - bit))) {
+                fb_putpixel(fb, px + bit, py + row, col);
+            } else {
+                fb_putpixel(fb, px + bit, py + row, bg);
+            }
         }
     }
 }
