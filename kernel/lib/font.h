@@ -1,7 +1,7 @@
 #ifndef FONT_H
 #define FONT_H
 
-#include <stdint.h>
+#include "../include/types.h"
 
 // 8x16 font for ASCII 32 (Space) to 126 (~)
 // 95 characters total, 16 rows per character (uint8_t = 8 pixels wide)

@@ -1,7 +1,7 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 #include "../include/limine.h"
-#include <stdint.h>
+#include "../include/types.h"
 
 uint32_t fb_make_color(struct limine_framebuffer *fb, uint8_t r, uint8_t g, uint8_t b);
 void fb_putpixel(struct limine_framebuffer *fb, uint64_t x, uint64_t y, uint32_t color);
