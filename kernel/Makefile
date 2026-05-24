@@ -31,8 +31,8 @@ LDFLAGS   := \
     --no-dynamic-linker \
     -z max-page-size=0x1000
 
-C_SRCS   := main.c lib/printf.c drivers/display.c drivers/serial.c
-ASM_SRCS := arch/boot.asm
+C_SRCS   := main.c lib/printf.c drivers/display.c drivers/serial.c arch/gdt.c arch/idt.c drivers/pic.c drivers/pit.c
+ASM_SRCS := arch/boot.asm arch/gdt.asm arch/isr.asm
 
 C_OBJS   := $(patsubst %.c,   $(BUILD)/%.c.o,   $(C_SRCS))
 ASM_OBJS := $(patsubst %.asm, $(BUILD)/%.asm.o, $(ASM_SRCS))
