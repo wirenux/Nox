@@ -1,6 +1,6 @@
 #pragma once
 
-const char *nox_logo = 
+const char *nox_logo =
     "M'''''''`YM                   \n" // No escapes needed, perfect alignment
     "M  mmmm.  M                   \n"
     "M  MMMMM  M .d8888b. dP.  .dP \n"

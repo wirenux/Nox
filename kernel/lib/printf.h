@@ -1,10 +1,12 @@
-#ifndef PRINTF_H
-#define PRINTF_H
-
+#pragma once
 #include <stdarg.h>
-#include "../include/types.h"
 #include "../include/limine.h"
 
-void kprintf(struct limine_framebuffer *fb, uint64_t x, uint64_t y, const char *format, ...);
+// Call once at boot with the Limine framebuffer pointer.
+// After this, kprintf() works with no arguments for fb/x/y.
+void kprintf_init(struct limine_framebuffer *fb);
 
-#endif
+// Drop-in formatted print. Uses persistent cursor.
+// Supports: %d %u %lu %ld %x %X %p %s %c %%
+// Width: %08x style zero-padding works for %x/%X
+void kprintf(const char *fmt, ...);

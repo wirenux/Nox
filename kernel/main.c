@@ -47,54 +47,19 @@ void kmain(void) {
         fb = framebuffer_request.response->framebuffers[0];
     }
 
-    if (fb) {
-        // Draw the static text components first
-        kprintf(fb, 0, 0, "%s", nox_logo);
+    kprintf_init(fb);
 
-        // Animation configuration
-        int64_t side = 60;  // Starting size
-
-        int64_t x = 500;
-        int64_t y = 500;    // Shifted down slightly to start below the text logo
-        int64_t dx = 4;     // X velocity
-        int64_t dy = 4;     // Y velocity
-
-        uint8_t r = 0;
-        uint8_t g = 0;
-        uint8_t b = 255;
-
-        for (;;) {
-            fb_fill_rect(fb, x, y, side, side, 0x000000);
-
-            x += dx;
-            y += dy;
-
-            r = (r + 3) % 255;
-            g = (g + 1) % 255;
-            b = (b + 2) % 255;
-
-            if (x <= 0) {
-                x = 0;
-                dx = -dx;
-            } else if (x + side >= fb->width) {
-                x = fb->width - side;
-                dx = -dx;
-            }
-
-            if (y <= 0) {
-                y = 0;
-                dy = -dy;
-            } else if (y + side >= fb->height) {
-                y = fb->height - side;
-                dy = -dy;
-            }
-
-            uint32_t current_color = fb_make_color(fb, r, g, b);
-            fb_fill_rect(fb, x, y, side, side, current_color);
-
-            delay(10);
-        }
+    if (framebuffer_request.response &&
+        framebuffer_request.response->framebuffer_count > 0) {
+        fb = framebuffer_request.response->framebuffers[0];
     }
+
+
+    kprintf("%s", nox_logo);
+    kprintf("Nox kernel booting...\n");
+    kprintf("Framebuffer: %lu x %lu @ %p\n",
+            fb->width, fb->height, (void *)fb->address);
+    kprintf("BPP: %u\n", (unsigned)fb->bpp);
 
     __asm__ volatile ("cli");
     for (;;) {
