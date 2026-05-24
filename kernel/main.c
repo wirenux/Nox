@@ -92,7 +92,7 @@ void kmain(void) {
             uint32_t current_color = fb_make_color(fb, r, g, b);
             fb_fill_rect(fb, x, y, side, side, current_color);
 
-            delay(5);
+            delay(10);
         }
     }
 
