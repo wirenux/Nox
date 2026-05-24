@@ -20,7 +20,8 @@ CFLAGS  := \
     -std=c11            \
     -Wall -Wextra       \
     -O2 -g              \
-    -Iinclude
+    -Iinclude           \
+    -Ilib
 
 NASMFLAGS := -f elf64 -g -F dwarf
 
@@ -30,7 +31,7 @@ LDFLAGS   := \
     --no-dynamic-linker \
     -z max-page-size=0x1000
 
-C_SRCS   := main.c
+C_SRCS   := main.c lib/printf.c drivers/display.c
 ASM_SRCS := arch/boot.asm
 
 C_OBJS   := $(patsubst %.c,   $(BUILD)/%.c.o,   $(C_SRCS))
