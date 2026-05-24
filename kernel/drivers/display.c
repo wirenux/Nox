@@ -124,7 +124,7 @@ void fb_putpixel(struct limine_framebuffer *fb, uint64_t x, uint64_t y, uint32_t
 
     uint8_t *base = (uint8_t *)(uintptr_t)fb->address;
     uint64_t bpp_bytes = fb->bpp / 8;
-    uint8_t *pix = base + y * fb->pitch + x * bpp_bytes;
+    volatile uint8_t *pix = base + (y * fb->pitch) + (x * bpp_bytes);
 
     if (bpp_bytes == 4) {
         *(uint32_t *)pix = color;

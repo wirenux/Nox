@@ -25,7 +25,7 @@ static volatile struct limine_terminal_request terminal_request = {
     .revision = 0,
 };
 
-void kmain(void) {
+void kmain(void) { // Removed noreturn for now to avoid the warning
     struct limine_framebuffer *fb = NULL;
 
     if (framebuffer_request.response && framebuffer_request.response->framebuffer_count > 0) {
@@ -38,14 +38,17 @@ void kmain(void) {
         uint64_t x = (fb->width - side) / 2;
         uint64_t y = (fb->height - side) / 2;
         fb_fill_rect(fb, x, y, side, side, color);
-        /* draw persistent text on framebuffer */
-        uint32_t fg = fb_make_color(fb, 255, 255, 255);
-        uint32_t bg = fb_make_color(fb, 0, 0, 0);
-        fb_draw_string(fb, 10, 10, "HELLO FROM KERNEL!", fg, bg);
+
+        // Printing
+        kprintf(fb, 0, 0, "Hello, from Nox! Value: %d\n", 42);
+
+        // Loop to print values
+        for (int i = 0; i < 999999999; i++) {
+            kprintf(fb, 0, 10, "%d", i);
+        }
     }
 
-    kprintf(fb, 0, 0, "Hello, Kernel! Value: %d\nNext line.", 42);
-
+    __asm__ volatile ("cli");
     for (;;) {
         __asm__ volatile ("hlt");
     }
