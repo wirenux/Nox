@@ -16,7 +16,8 @@ run: all
 	    -serial stdio    \
 		-vga std		 \
 	    -no-reboot       \
-	    -no-shutdown
+	    -no-shutdown	\
+		-display cocoa,zoom-to-fit=on
 
 debug: all
 	$(QEMU)              \
@@ -25,6 +26,7 @@ debug: all
 	    -serial stdio    \
 	    -no-reboot       \
 	    -no-shutdown     \
+		-display cocoa,zoom-to-fit=on \
 	    -s -S
 
 clean:
