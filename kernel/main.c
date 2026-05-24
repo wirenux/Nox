@@ -9,6 +9,7 @@
 #include "arch/gdt.h"
 #include "arch/idt.h"
 #include "arch/cpu.h"
+#include "mm/pmm.h"
 
 __attribute__((used, section(".limine_requests")))
 static volatile struct limine_bootloader_info_request bootloader_info_req = {
@@ -25,14 +26,24 @@ static volatile struct limine_framebuffer_request framebuffer_request = {
     .revision = 0,
 };
 
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_hhdm_request hhdm_request = {
+    .id = LIMINE_HHDM_REQUEST,
+    .revision = 0,
+};
+
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_memmap_request memmap_request = {
+    .id = LIMINE_MEMMAP_REQUEST,
+    .revision = 0,
+};
+
 void kmain(void) {
-    // CPU structures first — must be before anything that could fault
     gdt_init();
     idt_init();
-
-    // Serial early so we have output even if the framebuffer fails
     serial_init();
     serial_clear();
+
     serial_puts(nox_logo);
     serial_puts("Nox Kernel: Serial initialized\n");
 
@@ -43,7 +54,31 @@ void kmain(void) {
         fb = framebuffer_request.response->framebuffers[0];
     }
 
-    kprintf_init(fb);   // safe even if fb is NULL — kprintf will no-op
+    kprintf_init(fb);
+
+    if (!memmap_request.response || !hhdm_request.response) {
+        kprintf("FATAL: no memory map from Limine\n");
+        for (;;) __asm__ volatile ("hlt");
+    }
+
+    pmm_init(memmap_request.response, hhdm_request.response->offset);
+    pmm_print_stats();
+
+    uint64_t p1 = pmm_alloc_page();
+    uint64_t p2 = pmm_alloc_page();
+    uint64_t p3 = pmm_alloc_page();
+    kprintf("alloc: %p %p %p\n", (void*)p1, (void*)p2, (void*)p3);
+
+    // Free the middle one and reallocate — should get p2 back
+    pmm_free_page(p2);
+    uint64_t p4 = pmm_alloc_page();
+    kprintf("realloc: %p (should == %p)\n", (void*)p4, (void*)p2);
+
+    // Clean up
+    pmm_free_page(p1);
+    pmm_free_page(p3);
+    pmm_free_page(p4);
+    pmm_print_stats();
 
     // Hardware interrupts
     pic_init();         // remap PIC before enabling any IRQs
