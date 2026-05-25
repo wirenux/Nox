@@ -49,31 +49,6 @@ static volatile struct limine_kernel_address_request kaddr_request = {
     .revision = 0,
 };
 
-/* Test threads (file-scope) */
-static void test_thread_a(void *arg) {
-    (void)arg;
-    for (;;) {
-        kprintf("Thread A running (id=%lu)\n", sched_current()->id);
-        sched_sleep(1000);  /* sleep 1 second */
-    }
-}
-
-static void test_thread_b(void *arg) {
-    (void)arg;
-    for (;;) {
-        kprintf("Thread B running (id=%lu)\n", sched_current()->id);
-        sched_sleep(1500);  /* sleep 1.5 seconds */
-    }
-}
-
-static void test_keyboard(void *arg) {
-    (void)arg;
-    kprintf("keyboard: type something!\n");
-    for (;;) {
-        char c = keyboard_getchar();  // blocks until key pressed
-        kprintf("key: '%c' (0x%x)\n", c, (unsigned)c);
-    }
-}
 
 void kmain(void) {
     // CPU structures
@@ -149,11 +124,6 @@ void kmain(void) {
                 fb->width, fb->height, (void *)fb->address,
                 (unsigned)fb->bpp);
     }
-
-    // thread_create(test_thread_a, NULL);
-    // thread_create(test_thread_b, NULL);
-
-    // thread_create(test_keyboard, NULL);
 
     thread_create(terminal_run, NULL);
 

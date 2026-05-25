@@ -39,11 +39,16 @@ uint64_t pmm_get_hhdm(void) {
 void pmm_init(struct limine_memmap_response *memmap, uint64_t hhdm_offset) {
     hhdm_base = hhdm_offset;
 
-    // ── Pass 1: find the highest physical address ─────────────────
-    // We need this to know how large the bitmap must be.
+    // ── Pass 1: find the highest usable physical address ───────────
+    // We only need bitmap coverage for frames we might actually hand
+    // out. Counting every MMIO / reserved hole can explode the bitmap
+    // size on real hardware.
     uint64_t highest_addr = 0;
     for (uint64_t i = 0; i < memmap->entry_count; i++) {
         struct limine_memmap_entry *e = memmap->entries[i];
+        if (e->type != LIMINE_MEMMAP_USABLE)
+            continue;
+
         uint64_t end = e->base + e->length;
         if (end > highest_addr)
             highest_addr = end;
@@ -107,6 +112,15 @@ void pmm_init(struct limine_memmap_response *memmap, uint64_t hhdm_offset) {
             free_frames--;
         }
     }
+
+    // Frame 0 is used as the failure sentinel by pmm_alloc_page().
+    // Keep it permanently reserved so the allocator never returns 0 as
+    // a valid physical address.
+    if (total_frames > 0 && !bitmap_test(0)) {
+        bitmap_set(0);
+        if (free_frames > 0)
+            free_frames--;
+    }
 }
 
 uint64_t pmm_alloc_page(void) {
@@ -122,6 +136,8 @@ uint64_t pmm_alloc_page(void) {
                 return 0;  // ran off the end
 
             if (!bitmap_test(frame)) {
+                if (frame == 0)
+                    continue;
                 bitmap_set(frame);
                 free_frames--;
                 return frame * PAGE_SIZE;  // return physical address

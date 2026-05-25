@@ -19,6 +19,7 @@ run: all
 	    -no-shutdown	\
 		-display cocoa,zoom-to-fit=on \
 		-device virtio-keyboard-pci # <- ps/2 keyboard
+# 		-m 2048M \
 
 debug: all
 	$(QEMU)              \

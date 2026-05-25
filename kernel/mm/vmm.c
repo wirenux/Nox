@@ -95,36 +95,19 @@ void vmm_switch(page_table_t *pml4) {
 
 void vmm_init(struct limine_memmap_response *memmap,
               struct limine_kernel_address_response *kaddr) {
-    // Allocate the kernel's PML4
-    kernel_pml4 = vmm_new_address_space();
+    // Reuse the bootloader's current page tables instead of rebuilding
+    // the full HHDM up front. On real hardware, mapping every page table
+    // entry for every usable frame can consume a lot of physical memory
+    // before the heap is even available.
+    uint64_t cr3_phys;
+    __asm__ volatile ("mov %%cr3, %0" : "=r"(cr3_phys));
+    kernel_pml4 = (page_table_t *)PHYS_TO_VIRT(cr3_phys);
 
-    uint64_t hhdm = pmm_get_hhdm();
-
-    // Map every usable region at hhdm_base + physical_address.
-    // This lets the kernel dereference any physical address by adding
-    // hhdm to it — which PHYS_TO_VIRT() does automatically.
-    for (uint64_t i = 0; i < memmap->entry_count; i++) {
-        struct limine_memmap_entry *e = memmap->entries[i];
-
-        // Map all non-firmware regions — kernel needs to access them
-        if (e->type != LIMINE_MEMMAP_USABLE &&
-            e->type != LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE &&
-            e->type != LIMINE_MEMMAP_KERNEL_AND_MODULES &&
-            e->type != LIMINE_MEMMAP_FRAMEBUFFER &&
-            e->type != LIMINE_MEMMAP_ACPI_RECLAIMABLE)
-            continue;
-
-        uint64_t pages = (e->length + PAGE_SIZE - 1) / PAGE_SIZE;
-        for (uint64_t p = 0; p < pages; p++) {
-            uint64_t phys = e->base + p * PAGE_SIZE;
-            uint64_t virt = hhdm + phys;
-            vmm_map_page(kernel_pml4, virt, phys, PTE_KERNEL_RW);
-        }
-    }
+    kprintf("VMM: reusing bootloader address space\n");
 
     // Limine tells us where it loaded the kernel in physical memory
     // and what virtual address it linked it to.
-    // Map every page of the kernel image at its VMA.
+    // Keep these pages mapped in case the bootloader did not already do so.
     uint64_t phys_base = kaddr->physical_base;
     uint64_t virt_base = kaddr->virtual_base;
 
