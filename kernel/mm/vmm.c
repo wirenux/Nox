@@ -3,6 +3,9 @@
 #include "../include/limine.h"
 #include "../lib/printf.h"
 #include "../arch/cpu.h"
+#include "../include/types.h"
+
+page_table_t *kernel_pml4 = NULL;
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
@@ -93,7 +96,7 @@ void vmm_switch(page_table_t *pml4) {
 void vmm_init(struct limine_memmap_response *memmap,
               struct limine_kernel_address_response *kaddr) {
     // Allocate the kernel's PML4
-    page_table_t *pml4 = vmm_new_address_space();
+    kernel_pml4 = vmm_new_address_space();
 
     uint64_t hhdm = pmm_get_hhdm();
 
@@ -115,7 +118,7 @@ void vmm_init(struct limine_memmap_response *memmap,
         for (uint64_t p = 0; p < pages; p++) {
             uint64_t phys = e->base + p * PAGE_SIZE;
             uint64_t virt = hhdm + phys;
-            vmm_map_page(pml4, virt, phys, PTE_KERNEL_RW);
+            vmm_map_page(kernel_pml4, virt, phys, PTE_KERNEL_RW);
         }
     }
 
@@ -133,12 +136,12 @@ void vmm_init(struct limine_memmap_response *memmap,
     for (uint64_t p = 0; p < pages; p++) {
         uint64_t phys = phys_base + p * PAGE_SIZE;
         uint64_t virt = virt_base + p * PAGE_SIZE;
-        vmm_map_page(pml4, virt, phys, PTE_KERNEL_RW);
+        vmm_map_page(kernel_pml4, virt, phys, PTE_KERNEL_RW);
     }
 
     // From this point the CPU uses our PML4.
     // If any mapping is wrong, we triple fault here.
-    vmm_switch(pml4);
+    vmm_switch(kernel_pml4);
 
     kprintf("VMM: kernel address space active\n");
 }

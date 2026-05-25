@@ -24,6 +24,8 @@
 // A page table is just an array of 512 uint64_t entries
 typedef uint64_t page_table_t[512];
 
+extern page_table_t *kernel_pml4;
+
 // Create a new empty address space (allocates and zeroes a PML4)
 page_table_t *vmm_new_address_space(void);
 
