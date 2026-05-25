@@ -12,6 +12,7 @@
 #include "mm/pmm.h"
 #include "mm/vmm.h"
 #include "mm/heap.h"
+#include "sched/sched.h"
 
 __attribute__((used, section(".limine_requests")))
 static volatile struct limine_bootloader_info_request bootloader_info_req = {
@@ -45,6 +46,23 @@ static volatile struct limine_kernel_address_request kaddr_request = {
     .id = LIMINE_KERNEL_ADDRESS_REQUEST,
     .revision = 0,
 };
+
+/* Test threads (file-scope) */
+static void test_thread_a(void *arg) {
+    (void)arg;
+    for (;;) {
+        kprintf("Thread A running (id=%lu)\n", sched_current()->id);
+        sched_sleep(1000);  /* sleep 1 second */
+    }
+}
+
+static void test_thread_b(void *arg) {
+    (void)arg;
+    for (;;) {
+        kprintf("Thread B running (id=%lu)\n", sched_current()->id);
+        sched_sleep(1500);  /* sleep 1.5 seconds */
+    }
+}
 
 void kmain(void) {
     // CPU structures
@@ -80,6 +98,7 @@ void kmain(void) {
 
     vmm_init(memmap_request.response, kaddr_request.response);
     heap_init();
+    sched_init();
 
     // PMM self-test
     uint64_t p1 = pmm_alloc_page();
@@ -116,6 +135,9 @@ void kmain(void) {
                 fb->width, fb->height, (void *)fb->address,
                 (unsigned)fb->bpp);
     }
+
+    thread_create(test_thread_a, NULL);
+    thread_create(test_thread_b, NULL);
 
     // Idle loop
     uint64_t last_sec = 0;

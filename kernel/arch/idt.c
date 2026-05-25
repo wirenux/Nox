@@ -4,6 +4,7 @@
 #include "../drivers/serial.h"
 #include "../drivers/pit.h"
 #include "../drivers/pic.h"
+#include "../sched/sched.h"
 
 #define IDT_ENTRIES 256
 
@@ -96,7 +97,7 @@ void isr_dispatch(cpu_frame_t *frame) {
         uint8_t irq = frame->vector - 32;
 
         switch (irq) {
-            case 0: pit_tick(); break;   // timer
+            case 0: pit_tick(); sched_tick(); break;   // timer
             // case 1: kbd_handler(); break; // keyboard — later
             default: break;
         }
