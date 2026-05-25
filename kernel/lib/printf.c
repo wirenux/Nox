@@ -151,11 +151,8 @@ void kprintf_init(struct limine_framebuffer *fb) {
     cur_y  = 0;
 }
 
-void kprintf(const char *fmt, ...) {
+void kvprintf(const char *fmt, va_list args) {
     if (!cur_fb) return;
-
-    va_list args;
-    va_start(args, fmt);
 
     for (const char *p = fmt; *p != '\0'; p++) {
         if (*p != '%') {
@@ -217,6 +214,12 @@ void kprintf(const char *fmt, ...) {
                 break;
         }
     }
+}
+
+void kprintf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    kvprintf(fmt, args);
 
     va_end(args);
 }

@@ -6,6 +6,7 @@
 #include "../mm/heap.h"
 #include "../mm/pmm.h"
 #include "../sched/sched.h"
+#include "../programs/program.h"
 
 #define INPUT_MAX 256
 
@@ -18,6 +19,8 @@ static void cmd_help(void) {
     kprintf("  mem       — show memory stats\n");
     kprintf("  uptime    — show tick count\n");
     kprintf("  echo ...  — print arguments\n");
+    kprintf("  programs  — list built-in C programs\n");
+    kprintf("  run NAME  — run a built-in C program\n");
     kprintf("  halt      — halt the kernel\n");
 }
 
@@ -51,6 +54,16 @@ static void cmd_echo(const char *args) {
     kprintf("%s\n", args);
 }
 
+static void cmd_run(const char *args) {
+    if (!args || *args == '\0') {
+        kprintf("usage: run NAME\n");
+        program_list();
+        return;
+    }
+
+    program_run(args);
+}
+
 static void cmd_halt(void) {
     kprintf("Halting Nox. Goodbye.\n");
     __asm__ volatile ("cli");
@@ -82,6 +95,8 @@ static void dispatch(char *line) {
     if (strcmp(line, "mem")    == 0) { cmd_mem();          return; }
     if (strcmp(line, "uptime") == 0) { cmd_uptime();       return; }
     if (strcmp(line, "echo")   == 0) { cmd_echo(args);     return; }
+    if (strcmp(line, "programs") == 0) { program_list();   return; }
+    if (strcmp(line, "run")    == 0) { cmd_run(args);      return; }
     if (strcmp(line, "halt")   == 0) { cmd_halt();         return; }
 
     kprintf("unknown command: %s\n", line);
