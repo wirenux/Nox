@@ -136,8 +136,8 @@ void kmain(void) {
                 (unsigned)fb->bpp);
     }
 
-    thread_create(test_thread_a, NULL);
-    thread_create(test_thread_b, NULL);
+    // thread_create(test_thread_a, NULL);
+    // thread_create(test_thread_b, NULL);
 
     // Idle loop
     uint64_t last_sec = 0;

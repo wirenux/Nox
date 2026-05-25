@@ -14,15 +14,43 @@ static uint64_t cur_y = 0;
 // We need the fb to know when to wrap/scroll — store it on first use
 static struct limine_framebuffer *cur_fb = NULL;
 
+static void scroll_up(void) {
+    if (!cur_fb) return;
+
+    uint8_t *base = (uint8_t *)(uintptr_t)cur_fb->address;
+    uint64_t bpp_bytes = cur_fb->bpp / 8;
+    uint64_t row_bytes = cur_fb->pitch;           // bytes per full scanline
+    uint64_t font_rows = FONT_H * row_bytes;      // bytes occupied by one text row
+
+    // Move everything up by FONT_H pixels
+    // src: pixel row FONT_H (second text line)
+    // dst: pixel row 0      (first text line)
+    // size: all rows except the last text line
+    uint64_t copy_size = (cur_fb->height - FONT_H) * row_bytes;
+    uint8_t *dst = base;
+    uint8_t *src = base + font_rows;
+
+    // Manual memmove — no libc yet
+    // Safe to copy forward because dst < src
+    for (uint64_t i = 0; i < copy_size; i++)
+        dst[i] = src[i];
+
+    // Clear the last line
+    uint8_t *last_line = base + (cur_fb->height - FONT_H) * row_bytes;
+    uint64_t clear_size = FONT_H * row_bytes;
+    for (uint64_t i = 0; i < clear_size; i++)
+        last_line[i] = 0;
+
+    (void)bpp_bytes; // unused but kept for clarity
+}
+
 static void newline(void) {
     cur_x = 0;
     cur_y += FONT_H;
-    // Simple scroll guard: if we go off screen, reset to top.
-    // Replace this with a real scroll later.
     if (cur_fb && cur_y + FONT_H > cur_fb->height) {
-        cur_y = 0;
-        // Optional: clear screen here
-        // fb_fill_rect(cur_fb, 0, 0, cur_fb->width, cur_fb->height, COLOR_BG);
+        // Instead of resetting to top, scroll up one line
+        scroll_up();
+        cur_y -= FONT_H;  // stay on the last line
     }
 }
 
