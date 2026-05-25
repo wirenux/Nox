@@ -2,6 +2,7 @@
 #include "pmm.h"
 #include "vmm.h"
 #include "../lib/printf.h"
+#include "../lib/string.h"
 
 // The heap lives at a fixed virtual address in the kernel's address space.
 // This range is reserved — nothing else should be mapped here.
@@ -181,12 +182,7 @@ void *kmalloc(size_t size) {
 void *kzalloc(size_t size) {
     void *ptr = kmalloc(size);
     if (!ptr) return NULL;
-
-    // Zero the memory — no memset yet, do it manually
-    uint8_t *p = (uint8_t *)ptr;
-    for (size_t i = 0; i < size; i++)
-        p[i] = 0;
-
+    memset(ptr, 0, size);
     return ptr;
 }
 

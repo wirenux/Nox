@@ -1,6 +1,7 @@
 #include "pmm.h"
 #include "../include/limine.h"
 #include "../include/types.h"
+#include "../lib/string.h"
 #include "../lib/printf.h"
 
 // ── Bitmap storage ────────────────────────────────────────────────────
@@ -74,8 +75,7 @@ void pmm_init(struct limine_memmap_response *memmap, uint64_t hhdm_offset) {
     // Start pessimistic — assume nothing is free.
     // We use a simple loop rather than memset since lib/string isn't
     // wired up yet.  Initialise each byte of the bitmap to 0xFF (all used).
-    for (uint64_t i = 0; i < bitmap_size; i++)
-        bitmap[i] = 0xFF;
+    memset(bitmap, 0xFF, bitmap_size);
 
     free_frames = 0;
 

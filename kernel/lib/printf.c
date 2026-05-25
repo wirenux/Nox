@@ -1,5 +1,6 @@
 #include "printf.h"
 #include "display.h"
+#include "string.h"
 #include "../include/types.h"
 
 #define FONT_W  8
@@ -17,31 +18,19 @@ static struct limine_framebuffer *cur_fb = NULL;
 static void scroll_up(void) {
     if (!cur_fb) return;
 
-    uint8_t *base = (uint8_t *)(uintptr_t)cur_fb->address;
-    uint64_t bpp_bytes = cur_fb->bpp / 8;
-    uint64_t row_bytes = cur_fb->pitch;           // bytes per full scanline
-    uint64_t font_rows = FONT_H * row_bytes;      // bytes occupied by one text row
+    uint8_t *base     = (uint8_t *)(uintptr_t)cur_fb->address;
+    uint64_t row_bytes = cur_fb->pitch;
+    uint64_t font_rows = FONT_H * row_bytes;
 
-    // Move everything up by FONT_H pixels
-    // src: pixel row FONT_H (second text line)
-    // dst: pixel row 0      (first text line)
-    // size: all rows except the last text line
-    uint64_t copy_size = (cur_fb->height - FONT_H) * row_bytes;
-    uint8_t *dst = base;
-    uint8_t *src = base + font_rows;
+    // Shift everything up by one text row
+    memmove(base,
+            base + font_rows,
+            (cur_fb->height - FONT_H) * row_bytes);
 
-    // Manual memmove — no libc yet
-    // Safe to copy forward because dst < src
-    for (uint64_t i = 0; i < copy_size; i++)
-        dst[i] = src[i];
-
-    // Clear the last line
-    uint8_t *last_line = base + (cur_fb->height - FONT_H) * row_bytes;
-    uint64_t clear_size = FONT_H * row_bytes;
-    for (uint64_t i = 0; i < clear_size; i++)
-        last_line[i] = 0;
-
-    (void)bpp_bytes; // unused but kept for clarity
+    // Clear the last text row
+    memset(base + (cur_fb->height - FONT_H) * row_bytes,
+           0,
+           FONT_H * row_bytes);
 }
 
 static void newline(void) {
