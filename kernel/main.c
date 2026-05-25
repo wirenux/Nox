@@ -10,6 +10,7 @@
 #include "arch/idt.h"
 #include "arch/cpu.h"
 #include "mm/pmm.h"
+#include "mm/vmm.h"
 
 __attribute__((used, section(".limine_requests")))
 static volatile struct limine_bootloader_info_request bootloader_info_req = {
@@ -38,6 +39,12 @@ static volatile struct limine_memmap_request memmap_request = {
     .revision = 0,
 };
 
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_kernel_address_request kaddr_request = {
+    .id = LIMINE_KERNEL_ADDRESS_REQUEST,
+    .revision = 0,
+};
+
 void kmain(void) {
     gdt_init();
     idt_init();
@@ -62,6 +69,12 @@ void kmain(void) {
     }
 
     pmm_init(memmap_request.response, hhdm_request.response->offset);
+    if (!kaddr_request.response) {
+        kprintf("FATAL: no kernel address response\n");
+        for (;;) __asm__ volatile ("hlt");
+    }
+
+    vmm_init(memmap_request.response, kaddr_request.response);
     pmm_print_stats();
 
     uint64_t p1 = pmm_alloc_page();
