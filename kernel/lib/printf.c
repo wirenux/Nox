@@ -59,6 +59,19 @@ static void put_char(char c) {
         cur_x = (cur_x + 4 * FONT_W) & ~(4 * FONT_W - 1);
         return;
     }
+    
+    if (c == '\b') {
+        if (cur_x >= FONT_W) {
+            cur_x -= FONT_W;
+        } else if (cur_y >= FONT_H) {
+            // Go up a line — approximate, good enough for a terminal
+            cur_y -= FONT_H;
+            cur_x = (cur_fb->width / FONT_W) * FONT_W - FONT_W;
+        }
+        // Draw a space to blank the character
+        fb_draw_char8x16(cur_fb, cur_x, cur_y, ' ', COLOR_FG, COLOR_BG);
+        return;
+    }
 
     // Wrap if we hit the right edge
     if (cur_x + FONT_W > cur_fb->width)
@@ -206,4 +219,18 @@ void kprintf(const char *fmt, ...) {
     }
 
     va_end(args);
+}
+
+void kprintf_clear(void) {
+    if (!cur_fb) return;
+
+    uint8_t *base = (uint8_t *)(uintptr_t)cur_fb->address;
+    uint64_t size = cur_fb->pitch * cur_fb->height;
+
+    // Zero the entire framebuffer
+    memset(base, 0, size);
+
+    // Reset cursor to top-left
+    cur_x = 0;
+    cur_y = 0;
 }

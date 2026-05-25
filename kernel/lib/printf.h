@@ -10,3 +10,5 @@ void kprintf_init(struct limine_framebuffer *fb);
 // Supports: %d %u %lu %ld %x %X %p %s %c %%
 // Width: %08x style zero-padding works for %x/%X
 void kprintf(const char *fmt, ...);
+
+void kprintf_clear(void);

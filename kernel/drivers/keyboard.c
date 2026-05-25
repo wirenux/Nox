@@ -4,6 +4,8 @@
 #include "../lib/printf.h"
 #include "../sched/sched.h"
 
+static thread_t *waiting_thread = NULL;
+
 // ── Scan code → ASCII table (US QWERTY, set 1) ───────────────────────
 // Index = scan code. Value = ASCII character (0 = no mapping).
 // Only covers the main key area — no function keys, no numpad yet.
@@ -56,6 +58,9 @@ static const char sc_to_ascii_shift[128] = {
 // ── Ring buffer ───────────────────────────────────────────────────────
 #define KB_BUF_SIZE 256
 
+#define FLAG_LSHIFT (1 << 0)
+#define FLAG_RSHIFT (1 << 1)
+
 static char     kb_buf[KB_BUF_SIZE];
 static uint32_t kb_read  = 0;   // next position to read from
 static uint32_t kb_write = 0;   // next position to write to
@@ -81,25 +86,37 @@ static char buf_pop(void) {
 }
 
 // ── Modifier state ────────────────────────────────────────────────────
-static int shift_held = 0;
+static int shift_state = 0;
 static int caps_lock  = 0;
 
 // ── IRQ handler ───────────────────────────────────────────────────────
 
 void keyboard_irq_handler(void) {
-    uint8_t sc = inb(0x60);  // read scan code
+    uint8_t sc = inb(0x60);
 
-    // Key release — bit 7 set
+    // 1. Handle extended scan code prefix (Ignore/skip it for standard keys)
+    if (sc == 0xE0) {
+        return; 
+    }
+
+    // 2. Handle Key Releases (Bit 7 is set)
     if (sc & 0x80) {
         uint8_t released = sc & 0x7F;
-        if (released == SC_LSHIFT || released == SC_RSHIFT)
-            shift_held = 0;
+        if (released == SC_LSHIFT) {
+            shift_state &= ~FLAG_LSHIFT;
+        } else if (released == SC_RSHIFT) {
+            shift_state &= ~FLAG_RSHIFT;
+        }
         return;
     }
 
-    // Modifier keys
-    if (sc == SC_LSHIFT || sc == SC_RSHIFT) {
-        shift_held = 1;
+    // 3. Handle Key Presses
+    if (sc == SC_LSHIFT) {
+        shift_state |= FLAG_LSHIFT;
+        return;
+    }
+    if (sc == SC_RSHIFT) {
+        shift_state |= FLAG_RSHIFT;
         return;
     }
     if (sc == SC_CAPS) {
@@ -107,20 +124,27 @@ void keyboard_irq_handler(void) {
         return;
     }
 
-    // Normal key — look up ASCII
-    if (sc >= 128) return;  // ignore extended scan codes for now
+    // Guard against out-of-bounds array reads
+    if (sc >= 128) return;
 
-    int use_shift = shift_held;
+    // 4. Determine if Shift logic applies
+    int use_shift = (shift_state != 0); // Active if either shift is down
+    char base     = sc_to_ascii[sc];
 
-    // Caps lock only affects letters
-    char base = sc_to_ascii[sc];
-    if (caps_lock && base >= 'a' && base <= 'z')
+    if (caps_lock && base >= 'a' && base <= 'z') {
         use_shift = !use_shift;
+    }
 
     char c = use_shift ? sc_to_ascii_shift[sc] : sc_to_ascii[sc];
-    if (c == 0) return;  // unmapped key
+    if (c == 0) return;
 
     buf_push(c);
+
+    // Wake the waiting thread if there is one
+    if (waiting_thread) {
+        sched_unblock(waiting_thread);
+        waiting_thread = NULL;
+    }
 }
 
 // ── Public API ────────────────────────────────────────────────────────
@@ -135,8 +159,12 @@ int keyboard_has_char(void) {
 }
 
 char keyboard_getchar(void) {
-    // Yield until a character is available
-    while (buf_empty())
-        sched_yield();
+    while (buf_empty()) {
+        // Register ourselves as the waiter then block
+        // The IRQ handler will unblock us when a key arrives
+        waiting_thread = sched_current();
+        sched_block();
+        // When we wake up, loop back and check the buffer
+    }
     return buf_pop();
 }

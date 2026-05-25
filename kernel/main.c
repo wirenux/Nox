@@ -14,6 +14,7 @@
 #include "mm/heap.h"
 #include "sched/sched.h"
 #include "drivers/keyboard.h"
+#include "term/terminal.h"
 
 __attribute__((used, section(".limine_requests")))
 static volatile struct limine_bootloader_info_request bootloader_info_req = {
@@ -140,6 +141,7 @@ void kmain(void) {
 
     keyboard_init();
 
+
     // Boot info
     kprintf("GDT + IDT + PIC + PIT ready\n");
     if (fb) {
@@ -151,18 +153,11 @@ void kmain(void) {
     // thread_create(test_thread_a, NULL);
     // thread_create(test_thread_b, NULL);
 
-    thread_create(test_keyboard, NULL);
+    // thread_create(test_keyboard, NULL);
 
-    // Idle loop
-    uint64_t last_sec = 0;
-    uint64_t seconds  = 0;
+    thread_create(terminal_run, NULL);
+
     for (;;) {
         cpu_hlt();
-        uint64_t t = pit_get_ticks();
-        if (t - last_sec >= 100) {
-            last_sec = t;
-            seconds++;
-            kprintf("uptime: %lu second(s)\n", seconds);
-        }
     }
 }
