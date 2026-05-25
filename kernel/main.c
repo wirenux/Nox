@@ -13,6 +13,7 @@
 #include "mm/vmm.h"
 #include "mm/heap.h"
 #include "sched/sched.h"
+#include "drivers/keyboard.h"
 
 __attribute__((used, section(".limine_requests")))
 static volatile struct limine_bootloader_info_request bootloader_info_req = {
@@ -61,6 +62,15 @@ static void test_thread_b(void *arg) {
     for (;;) {
         kprintf("Thread B running (id=%lu)\n", sched_current()->id);
         sched_sleep(1500);  /* sleep 1.5 seconds */
+    }
+}
+
+static void test_keyboard(void *arg) {
+    (void)arg;
+    kprintf("keyboard: type something!\n");
+    for (;;) {
+        char c = keyboard_getchar();  // blocks until key pressed
+        kprintf("key: '%c' (0x%x)\n", c, (unsigned)c);
     }
 }
 
@@ -128,6 +138,8 @@ void kmain(void) {
     pit_init(100);
     cpu_sti();
 
+    keyboard_init();
+
     // Boot info
     kprintf("GDT + IDT + PIC + PIT ready\n");
     if (fb) {
@@ -138,6 +150,8 @@ void kmain(void) {
 
     // thread_create(test_thread_a, NULL);
     // thread_create(test_thread_b, NULL);
+
+    thread_create(test_keyboard, NULL);
 
     // Idle loop
     uint64_t last_sec = 0;

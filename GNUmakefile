@@ -17,7 +17,8 @@ run: all
 		-vga std		 \
 	    -no-reboot       \
 	    -no-shutdown	\
-		-display cocoa,zoom-to-fit=on
+		-display cocoa,zoom-to-fit=on \
+		-device virtio-keyboard-pci # <- ps/2 keyboard
 
 debug: all
 	$(QEMU)              \
